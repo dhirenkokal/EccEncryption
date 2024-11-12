@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 import org.gradle.kotlin.dsl.android
 import org.gradle.kotlin.dsl.libs
 
@@ -5,9 +7,17 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
+
+    packagingOptions {
+        exclude(
+            pattern = "META-INF/*"
+        )
+    }
+
     namespace = "com.example.newauth"
     compileSdk = 35
 
@@ -66,5 +76,14 @@ dependencies {
     implementation(libs.accompanist.permissions)
     implementation(libs.zxing.android.embedded)
     implementation(libs.core)
+
+    implementation("com.google.android.gms:play-services-drive-license:12.0.1")
+    implementation("com.google.android.gms:play-services-drive:17.0.0")
+    implementation("com.google.apis:google-api-services-drive:v3-rev20230815-2.0.0")
+    implementation("com.google.api-client:google-api-client-android:1.33.0")
+
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
 
 }

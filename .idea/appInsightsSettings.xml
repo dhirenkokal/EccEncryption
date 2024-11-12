@@ -22,10 +22,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.newauth" />
+                  <option name="mobileSdkAppId" value="1:784939158914:android:778db71f347021c3b3939b" />
+                  <option name="projectId" value="newauth-f3fc5" />
+                  <option name="projectNumber" value="784939158914" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

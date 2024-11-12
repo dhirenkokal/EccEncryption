@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "784939158914",
+    "project_id": "newauth-f3fc5",
+    "storage_bucket": "newauth-f3fc5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:784939158914:android:778db71f347021c3b3939b",
+        "android_client_info": {
+          "package_name": "com.example.newauth"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "784939158914-r0fpr2mahdpkghsovecbnib0isv2gus1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.newauth",
+            "certificate_hash": "fd28383513bb4d113ee01926d2f8bd913e4d6c18"
+          }
+        },
+        {
+          "client_id": "784939158914-k7s7pjn6ibcmghv9o5blk9ct8g0i099h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAISW_635YFgNRjHJ2KqWBfYEzui2RJSdY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "784939158914-k7s7pjn6ibcmghv9o5blk9ct8g0i099h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

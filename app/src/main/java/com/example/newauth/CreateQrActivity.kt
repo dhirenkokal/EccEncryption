@@ -39,8 +39,6 @@ class CreateQrActivity : ComponentActivity() {
     @Composable
     fun CreateQrScreen(context: Context) {
         val qrBitmap = remember { mutableStateOf<Bitmap?>(null) }
-
-        KeyPairUtils.generateECCKeyPair(context)
         val publicKeyBase64 = KeyPairUtils.getPublicKey(context)
 
         if (publicKeyBase64 != null) {
