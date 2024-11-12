@@ -3,23 +3,14 @@
 package com.example.newauth.objects
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.util.Base64
 import android.util.Log
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
-import com.google.api.client.http.ByteArrayContent
-import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
 import com.google.api.services.drive.model.FileList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.json.JSONObject
-import java.io.File
 import java.math.BigInteger
 import java.security.KeyFactory
 import java.security.KeyPair
@@ -28,7 +19,6 @@ import java.security.PublicKey
 import java.security.spec.ECPrivateKeySpec
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
-import java.util.Collections
 import javax.crypto.Cipher
 import javax.crypto.KeyAgreement
 import javax.crypto.spec.IvParameterSpec

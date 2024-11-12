@@ -34,6 +34,7 @@ import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.auth.api.identity.SignInCredential
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
@@ -47,11 +48,10 @@ import com.google.firebase.auth.GoogleAuthProvider
 class MainActivity : ComponentActivity() {
 
     private lateinit var driveService: Drive
-    private lateinit var oneTapClient: SignInClient
     private lateinit var firebaseAuth: FirebaseAuth
+    private lateinit var googleSignInClient: GoogleSignInClient
 
     companion object {
-        private const val REQ_ONE_TAP = 1001
         private const val RC_SIGN_IN = 9001 // Choose any unique value for the request code
         private const val TAG = "MainActivity"
     }
@@ -61,7 +61,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         firebaseAuth = FirebaseAuth.getInstance()
-        oneTapClient = Identity.getSignInClient(this)
+
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .requestIdToken(getString(R.string.default_web_client_id))
+            .build()
+
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
 
         setContent {
             MaterialTheme {
@@ -74,64 +80,30 @@ class MainActivity : ComponentActivity() {
                     onClearKeysClick = {
                         KeyPairUtils.clearAllKeys(context = this)
                         Toast.makeText(this, "Keys Cleared", Toast.LENGTH_SHORT).show()
-                    }
+                    },
+                    onGoogleSignInClick = { startGoogleSignIn() },
+                    onGoogleSignOutClick = { signOut() }
                 )
             }
         }
-        startOneTapSignIn()
+        checkExistingSignIn()
     }
 
-    private fun startOneTapSignIn() {
-        val signInRequest = BeginSignInRequest.builder()
-            .setGoogleIdTokenRequestOptions(
-                BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
-                    .setSupported(true)
-                    .setServerClientId("784939158914-k7s7pjn6ibcmghv9o5blk9ct8g0i099h.apps.googleusercontent.com")
-                    .setFilterByAuthorizedAccounts(false)
-                    .build()
-            )
-            .build()
-
-        oneTapClient.beginSignIn(signInRequest)
-            .addOnSuccessListener { result ->
-                startIntentSenderForResult(
-                    result.pendingIntent.intentSender,
-                    REQ_ONE_TAP,
-                    null,
-                    0,
-                    0,
-                    0
-                )
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "One Tap sign-in failed: ${e.localizedMessage}")
-            }
+    private fun signOut() {
+        googleSignInClient.signOut().addOnCompleteListener {
+            firebaseAuth.signOut()
+            Toast.makeText(this, "Signed Out", Toast.LENGTH_SHORT).show()
+        }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQ_ONE_TAP) {
-            try {
-                val credential: SignInCredential = oneTapClient.getSignInCredentialFromIntent(data)
-                val idToken = credential.googleIdToken
-                if (idToken != null) {
-                    Log.d(TAG, "Got ID token.")
-                    firebaseAuthWithGoogle(idToken)
-                } else {
-                    Log.d(TAG, "No ID token!")
-                }
-            } catch (e: ApiException) {
-                Log.e(TAG, "One Tap sign-in error: ${e.message}")
-            }
+    private fun checkExistingSignIn() {
+        val account = GoogleSignIn.getLastSignedInAccount(this)
+        if (account != null) {
+            firebaseAuthWithGoogle(account.idToken!!)
         }
     }
 
     private fun firebaseAuthWithGoogle(idToken: String) {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestEmail() // Request user email (add any other required scopes)
-            .requestIdToken(getString(R.string.default_web_client_id)) // Use your web client ID
-            .build()
-
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         firebaseAuth.signInWithCredential(credential)
             .addOnCompleteListener(this) { task ->
@@ -139,22 +111,53 @@ class MainActivity : ComponentActivity() {
                     Log.d(TAG, "Firebase authentication successful!")
                     Toast.makeText(this, "Sign-in successful", Toast.LENGTH_SHORT).show()
 
-                    // After successful Firebase authentication, initialize GoogleSignIn
-                    val googleSignInClient = GoogleSignIn.getClient(this, gso) // gso is your GoogleSignInOptions
+                    // Initialize Google Drive service
                     val googleSignInAccount = GoogleSignIn.getLastSignedInAccount(this)
-
-                    if (googleSignInAccount != null) {
-                        initializeDriveService(googleSignInAccount)
-                    } else {
-                        // In case the account is not signed in yet, sign in explicitly with Google
-                        val signInIntent = googleSignInClient.signInIntent
-                        startActivityForResult(signInIntent, RC_SIGN_IN)
+                    googleSignInAccount?.let {
+                        initializeDriveService(it)
                     }
                 } else {
                     Log.e(TAG, "Firebase authentication failed: ${task.exception?.message}")
                     Toast.makeText(this, "Sign-in failed", Toast.LENGTH_SHORT).show()
                 }
             }
+    }
+
+    private fun startGoogleSignIn() {
+        val signInIntent = googleSignInClient.signInIntent
+        startActivityForResult(signInIntent, RC_SIGN_IN)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == RC_SIGN_IN) {
+            if (data != null) {
+                val result = GoogleSignIn.getSignedInAccountFromIntent(data)
+
+                if (result != null) {
+                    try {
+                        val account = result.getResult(ApiException::class.java)
+                        if (account != null) {
+                            // Proceed with Firebase authentication or any further logic
+                            firebaseAuthWithGoogle(account.idToken!!)
+                        } else {
+                            Log.e(TAG, "Google sign-in failed: Account is null")
+                            Toast.makeText(this, "Sign-in failed", Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (e: ApiException) {
+                        Log.e(TAG, "Google sign-in failed with exception: ${e.statusCode}")
+                        Toast.makeText(this, "Sign-in failed", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Log.e(TAG, "Google sign-in result is null")
+                    Toast.makeText(this, "Sign-in failed", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Log.e(TAG, "Google sign-in data is null")
+                Toast.makeText(this, "Sign-in failed", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun initializeDriveService(googleSignInAccount: GoogleSignInAccount) {
@@ -174,17 +177,15 @@ class MainActivity : ComponentActivity() {
 
         KeyPairUtils.fetchECCKeysFromDrive(
             driveService,
-            context = this,
-        ){ keypair ->
-            if(keypair != null){
+            context = this
+        ) { keypair ->
+            if (keypair != null) {
                 Log.d("MainActivity", "Keypair fetched from Drive: $keypair")
-            }else{
+            } else {
                 Log.d("MainActivity", "Keypair not found")
             }
         }
     }
-
-
     private fun navigateToCreateQrActivity() {
         val intent = Intent(this, CreateQrActivity::class.java)
         startActivity(intent)
@@ -213,7 +214,9 @@ fun AuthenticationScreen(
     onGetQrClick: () -> Unit,
     onEncryptTextClick: () -> Unit,
     onDecryptTextClick: () -> Unit,
-    onClearKeysClick: () -> Unit
+    onClearKeysClick: () -> Unit,
+    onGoogleSignInClick: () -> Unit,
+    onGoogleSignOutClick: () -> Unit
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -260,6 +263,15 @@ fun AuthenticationScreen(
 
             Button(onClick = onClearKeysClick ) {
                 Text("Clear Keys")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(onClick = onGoogleSignInClick) {
+                Text("Sign In with Google")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(onClick = onGoogleSignOutClick) {
+                Text("Sign out")
             }
         }
     }
